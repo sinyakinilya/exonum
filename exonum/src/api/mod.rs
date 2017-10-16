@@ -17,7 +17,7 @@
 use iron::IronError;
 use iron::prelude::*;
 use iron::status;
-use iron::headers::Cookie;
+use iron::headers::{Cookie, AccessControlAllowOrigin};
 use hyper::header::{ContentType, SetCookie};
 use cookie::Cookie as CookiePair;
 use router::Router;
@@ -140,9 +140,15 @@ impl From<ApiError> for IronError {
             }
             _ => status::Conflict,
         };
+        let mut resp = Response::with((
+            code,
+            ::serde_json::to_string_pretty(&body).unwrap(),
+        ));
+        resp.headers.set(ContentType::json());
+        resp.headers.set(AccessControlAllowOrigin::Any);
         IronError {
             error: Box::new(e),
-            response: Response::with((code, ::serde_json::to_string_pretty(&body).unwrap())),
+            response: resp,
         }
     }
 }
@@ -267,6 +273,7 @@ pub trait Api {
             serde_json::to_string_pretty(json).unwrap(),
         ));
         resp.headers.set(ContentType::json());
+        resp.headers.set(AccessControlAllowOrigin::Any);
         if let Some(cookies) = cookies {
             resp.headers.set(SetCookie(cookies));
         }
@@ -281,6 +288,7 @@ pub trait Api {
     ) -> IronResult<Response> {
         let mut resp = Response::with((status::Ok, serde_json::to_string_pretty(json).unwrap()));
         resp.headers.set(ContentType::json());
+        resp.headers.set(AccessControlAllowOrigin::Any);
         if let Some(cookies) = cookies {
             resp.headers.set(SetCookie(cookies));
         }
